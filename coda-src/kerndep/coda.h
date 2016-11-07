@@ -272,6 +272,7 @@ struct coda_statfs {
 #define CODA_STORE	 35
 #define CODA_RELEASE	 36
 #define CODA_NCALLS 37
+#define CODA_READ_WRITE 38
 
 #define DOWNCALL(opcode) (opcode >= CODA_REPLACE && opcode <= CODA_PURGEFID)
 
@@ -329,6 +330,12 @@ struct coda_open_out {
     ino_t	inode;
 };
 
+/* coda_read_write: */
+struct coda_read_write_in {
+    struct coda_in_hdr ih;
+    struct CodaFid	Fid;
+    loff_t read_offset;
+};
 
 /* coda_store: */
 struct coda_store_in {
@@ -694,6 +701,7 @@ union inputArgs {
     struct coda_open_by_fd_in coda_open_by_fd;
     struct coda_open_by_path_in coda_open_by_path;
     struct coda_statfs_in coda_statfs;
+    struct coda_read_write_in coda_read_write;
 };
 
 union outputArgs {

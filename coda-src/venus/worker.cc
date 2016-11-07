@@ -1424,6 +1424,37 @@ void worker::main(void)
 		break;
 		}
 
+	    case CODA_READ_WRITE:
+		{
+		LOG(100, ("CODA_READ_WRITE: u.u_pid = %d u.u_pgid = %d\n", u.u_pid, u.u_pgid)); 
+#ifdef __CYGWIN32__
+		char *slash;
+#endif
+                /* Remember some info for dealing with interrupted open calls */
+                /*TODO: How can this affect a read ?? */
+		saveFid = in->coda_read_write.Fid;
+		
+		MAKE_CNODE(vtarget, in->coda_open_by_path.Fid, 0);
+
+		read(&vtarget, in->coda_read_write.read_offset);
+		
+		if (u.u_error == 0) {
+		    MarinerReport(&vtarget.c_fid, u.u_uid);
+
+                    /*TODO: How to print out the file being read ?*/
+                    /*sprintf(begin, "%s%s/%s", CachePrefix, CacheDir, 
+                            vtarget.c_cf->Name());*/
+#ifdef __CYGWIN32__
+#endif
+                    LOG(100, ("CODA_READ_WRITE: attempted to read at offset %lld\n",
+                                    in->coda_read_write.read_offset));
+		} else {
+		    eprint("worker::main Got read write opcode %d", in->ih.opcode);
+		    eprint("worker::main Got read write offset %lld", in->coda_read_write.read_offset);
+        }
+		break;
+		}
+
 	    case CODA_READLINK: 
 		{
 		LOG(100, ("CODA_READLINK: u.u_pid = %d u.u_pgid = %d\n", u.u_pid, u.u_pgid));
@@ -1516,6 +1547,7 @@ void worker::main(void)
 		}
 		break;
                 }
+
 
 	    case CODA_STATFS:
 		{
