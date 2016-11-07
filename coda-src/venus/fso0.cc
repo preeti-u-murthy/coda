@@ -495,7 +495,7 @@ fsobj *fsdb::Create(VenusFid *key, int priority, const char *comp,
  */
 int fsdb::Get(fsobj **f_addr, VenusFid *key, uid_t uid, int rights,
 	      const char *comp, VenusFid *parent, int *rcode,
-	      int GetInconsistent)
+	      int GetInconsistent, int want)
 {
     int getdata = (rights & RC_DATA);
     int code = 0;
@@ -753,7 +753,7 @@ RestartFind:
 		/* first try the LookAside cache */
 		if (!f->LookAside()) {
 		  /* Let fsobj::Fetch go ahead and fetch the object */
-		  code = f->Fetch(uid);
+		  code = f->Fetch(uid, want);
 		}
 		
 		/* Restart operation in case of inconsistency. */

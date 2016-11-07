@@ -180,7 +180,7 @@ int fsobj::LookAside(void)
 }
 
 
-int fsobj::Fetch(uid_t uid)
+int fsobj::Fetch(uid_t uid, int want)
 {
     int fd = -1;
 
@@ -224,6 +224,7 @@ int fsobj::Fetch(uid_t uid)
 
     long offset = IsFile() ? cf.ValidData() : 0;
     GotThisData = 0;
+    long cbtemp = cbbreaks;
 
     /* C++ 3.0 whines if the following decls moved closer to use  -- Satya */
     {
@@ -243,6 +244,15 @@ int fsobj::Fetch(uid_t uid)
 	    sei->ByteQuota = -1;
 	    switch(stat.VnodeType) {
 		case File:
+            if (want == -1) {
+                sei->ByteQuota = -1;
+            } else if (want <= offset) {
+	            Recov_EndTrans(CMFP);
+                goto Exit;
+            } else {
+                sei->ByteQuota = want - offset;
+            }
+
                     /* and open the containerfile */
 		    fd = GetContainerFD();
 		    CODA_ASSERT(fd != -1);
@@ -296,8 +306,6 @@ int fsobj::Fetch(uid_t uid)
 	    }
 	Recov_EndTrans(CMFP);
     }
-
-    long cbtemp = cbbreaks;
 
     if (vol->IsReplicated()) {
         mgrpent *m = 0;
@@ -482,6 +490,7 @@ NonRepExit:
 	PutConn(&c);
     }
 
+Exit:
     if (fd != -1)
         data.file->Close(fd);
 

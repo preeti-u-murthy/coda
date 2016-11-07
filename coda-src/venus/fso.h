@@ -214,7 +214,7 @@ class fsdb {
     /* rcode arg added for local repair */
     int Get(fsobj **fso, VenusFid *fid, uid_t uid, int rights,
 	    const char *comp=NULL, VenusFid *parent=NULL, int *rcode=NULL,
-	    int GetInconsistent=0);
+	    int GetInconsistent=0, int want=1);
     void Put(fsobj **);
     void Flush();
     void Flush(Volid *);
@@ -617,7 +617,7 @@ class fsobj {
 
   public:
     /* The public CFS interface (Vice portion). */
-    int Fetch(uid_t);
+    int Fetch(uid_t, int want=-1);
     int GetAttr(uid_t, RPC2_BoundedBS * =0);
     int GetACL(RPC2_BoundedBS *, uid_t);
     int Store(unsigned long, Date_t, uid_t);
@@ -769,7 +769,7 @@ void FSOD_ReclaimFSOs(void);
 #define	BUSY(f)		((f)->refcnt > 0 || EXECUTING(f))
 #define	HOARDABLE(f)	((f)->HoardPri > 0)
 #define	FETCHABLE(f)	(!DYING(f) && REACHABLE(f) && !DIRTY(f) && \
-			 (!HAVESTATUS(f) || !ACTIVE(f)) && !f->IsLocalObj())
+			 (!HAVESTATUS(f) || (PARTIALDATA(f)) || (!ACTIVE(f))) && !f->IsLocalObj())
 /* we are replaceable whenever we are linked into FSDB->prioq */
 #define	REPLACEABLE(f)	((f)->prio_handle.tree() != 0)
 #define	GCABLE(f)	(DYING(f) && !DIRTY(f) && !BUSY(f))
