@@ -184,7 +184,7 @@ void vproc::open(struct venus_cnode *cp, int flags)
 	if (u.u_error) break;
 
 	/* Get the object. */
-	u.u_error = FSDB->Get(&f, &cp->c_fid, u.u_uid, RC_DATA);
+	u.u_error = FSDB->Get(&f, &cp->c_fid, u.u_uid, RC_STATUS);
 	if (u.u_error) goto FreeLocks;
 
 	if (exclp) { 
