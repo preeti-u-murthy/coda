@@ -69,6 +69,7 @@ extern "C" {
 #include <operations.h>
 #include <resutil.h>
 #include <ops.h>
+#include <copyfile.h>
 #include <rsle.h>
 #include <inconsist.h>
 #include <vice.private.h>
@@ -310,8 +311,29 @@ long FS_ViceOpenReintHandle(RPC2_Handle RPCid, ViceFid *Fid,
     RHandle->Inode = icreate((int) V_device(volptr), (int) V_id(volptr), 
 		      (int) v->vptr->vnodeNumber, (int) v->vptr->disk.uniquifier, 
 		      (int) v->vptr->disk.dataVersion + 1);
+
+    // User fid to copy the contents into this inode
     CODA_ASSERT(RHandle->Inode > 0);
 
+    // NEW: Optimize writes by reading only modified ranges sent from venus
+    int infd, outfd, rc;
+
+    // Open the file and copy its contents into the temporary file
+    infd = iopen(V_device(volptr), v->vptr->disk.node.inodeNumber, O_RDONLY);
+    outfd = iopen(V_device(volptr), RHandle->Inode, O_WRONLY);
+
+    CODA_ASSERT(infd && outfd);
+    
+    START_TIMING(CopyOnWrite_iwrite);
+    rc = copyfile(infd, outfd);
+    END_TIMING(CopyOnWrite_iwrite);
+
+    CODA_ASSERT(rc != -1);
+
+    close(infd);
+    close(outfd);
+
+    // At this point the temporary file has the old content(preseeded)
 FreeLocks:
     /* Put objects. */
     PutObjects(errorCode, volptr, NO_LOCK, vlist, 0, 0);
@@ -432,6 +454,7 @@ long FS_ViceSendReintFragment(RPC2_Handle RPCid, VolumeId Vid,
     memset(&sid, 0, sizeof(SE_Descriptor));
     sid.Tag = client->SEType;
     sid.Value.SmartFTPD.TransmissionDirection = CLIENTTOSERVER;
+    // Change this to set to the offset that is passed in as a parameter
     sid.Value.SmartFTPD.SeekOffset = status.st_size;	
     sid.Value.SmartFTPD.hashmark = (SrvDebugLevel > 2 ? '#' : '\0');
     sid.Value.SmartFTPD.Tag = FILEBYFD;
