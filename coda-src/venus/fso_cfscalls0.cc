@@ -251,6 +251,7 @@ int fsobj::Fetch(uid_t uid, int want)
                 goto Exit;
             } else {
                 sei->ByteQuota = want - offset;
+		        eprint("Venus fetched %ld bytes from offset %ld\n", sei->ByteQuota, offset);
             }
 
                     /* and open the containerfile */

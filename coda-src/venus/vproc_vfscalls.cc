@@ -245,7 +245,8 @@ void vproc::read(struct venus_cnode *cp, long read_offset)
 	if (u.u_error) break;
 
 	/* Get the object. */
-	u.u_error = FSDB->Get(&f, &cp->c_fid, u.u_uid, RC_DATA);
+	u.u_error = FSDB->Get(&f, &cp->c_fid, u.u_uid, RC_DATA,
+                            NULL, NULL, NULL, 0, read_offset);
 	if (u.u_error) goto FreeLocks;
 
 
