@@ -270,6 +270,43 @@ FreeLocks:
     }
 }
 
+void vproc::write(struct venus_cnode *cp, long write_offset, long length)
+{
+    LOG(1, ("vproc::write: fid = %s , offset=%lld, length=%lld\n", 
+	    FID_(&cp->c_fid), write_offset, length));
+
+    fsobj *f = 0;
+
+    //TODO: why is there a loop here ??
+    for (;;) {
+	Begin_VFS(&cp->c_fid, CODA_READ_WRITE, VM_OBSERVING);
+	if (u.u_error) break;
+
+	/* Get the fsobj. */
+    u.u_error = FSDB->Get(&f, &cp->c_fid, u.u_uid, RC_STATUS);
+	if (u.u_error) goto FreeLocks;
+
+
+    // We do not check for p ermissions
+
+    // TODO: What is required to be done here ??
+	/* Do the operation. */
+	/*u.u_error = f->Read(cp, u.u_uid);
+	if (u.u_error) goto FreeLocks;*/
+
+FreeLocks:
+	FSDB->Put(&f);
+	int retry_call = 0;
+	End_VFS(&retry_call);
+	if (!retry_call) break;
+    }
+
+    if (u.u_error == EINCONS) {
+	u.u_error = ENOENT;
+	k_Purge(&cp->c_fid, 1);
+    }
+}
+
 void vproc::close(struct venus_cnode *cp, int flags) 
 {
     LOG(1, ("vproc::close: fid = %s, flags = %x\n",

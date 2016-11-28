@@ -227,6 +227,7 @@ class vproc : public olink {
     void open(struct venus_cnode *, int);
     void close(struct venus_cnode *, int);
     void read(struct venus_cnode *, long);
+    void write(struct venus_cnode *, long, long);
     void ioctl(struct venus_cnode *, unsigned char nr, struct ViceIoctl *, int);
     void select(struct venus_cnode *, int);
     void getattr(struct venus_cnode *, struct coda_vattr *);
