@@ -1436,10 +1436,11 @@ void worker::main(void)
 		
 		MAKE_CNODE(vtarget, in->coda_open_by_path.Fid, 0);
 
-        if (in->coda_read_write.is_write == 1) {
-            write(&vtarget, in->coda_read_write.write_offset, in->coda_read_write.length);
+        // Treat this as a boolean
+        if (in->coda_read_write.is_write != 1) {
+		    read(&vtarget, in->coda_read_write.offset);
         } else {
-		    read(&vtarget, in->coda_read_write.read_offset);
+            write(&vtarget, in->coda_read_write.offset, in->coda_read_write.length);
         }
 		
 		if (u.u_error == 0) {
@@ -1450,16 +1451,16 @@ void worker::main(void)
                             vtarget.c_cf->Name());*/
 #ifdef __CYGWIN32__
 #endif
-                    if (in->coda_read_write.is_write == 1) {
-                        LOG(100, ("CODA_READ_WRITE: attempted to write %lld bytes at offset %lld\n",
-                                    in->coda_read_write.length, in->coda_read_write.write_offset));
-                    } else {
+                    if (in->coda_read_write.is_write != 1) {
                         LOG(100, ("CODA_READ_WRITE: attempted to read at offset %lld\n",
-                                    in->coda_read_write.read_offset));
+                                    in->coda_read_write.offset));
+                    } else {
+                        LOG(100, ("CODA_READ_WRITE: attempted to write %lld bytes at offset %lld\n",
+                                    in->coda_read_write.length, in->coda_read_write.offset));
                     }
 		} else {
 		    eprint("worker::main Got read write opcode %d", in->ih.opcode);
-		    eprint("worker::main Got read write offset %lld", in->coda_read_write.read_offset);
+		    eprint("worker::main Got read write offset %lld", in->coda_read_write.offset);
         }
 		break;
 		}

@@ -270,21 +270,21 @@ FreeLocks:
     }
 }
 
-void vproc::write(struct venus_cnode *cp, long write_offset, long length)
+void vproc::write(struct venus_cnode *cp, long offset, long length)
 {
     LOG(1, ("vproc::write: fid = %s , offset=%lld, length=%lld\n", 
-	    FID_(&cp->c_fid), write_offset, length));
+	    FID_(&cp->c_fid), offset, length));
 
     fsobj *f = 0;
 
-    //TODO: why is there a loop here ??
+    //Loop is to deal with locks
     for (;;) {
 	Begin_VFS(&cp->c_fid, CODA_READ_WRITE, VM_OBSERVING);
 	if (u.u_error) break;
 
 	/* Get the fsobj. */
-    u.u_error = FSDB->Get(&f, &cp->c_fid, u.u_uid, RC_STATUS);
-	if (u.u_error) goto FreeLocks;
+    f = FSDB->Find(&cp->c_fid);
+	if (!f) goto FreeLocks;
 
 
     // We do not check for p ermissions
@@ -293,17 +293,17 @@ void vproc::write(struct venus_cnode *cp, long write_offset, long length)
 	/* Do the operation. */
 	/*u.u_error = f->Read(cp, u.u_uid);
 	if (u.u_error) goto FreeLocks;*/
+    /*range_t newWrite;
+    newWrite.length = length;
+    newWrite.offset = offset;
+
+    // Sort the logs ?
+    f->writeLog.push_back(newWrite);*/
 
 FreeLocks:
-	FSDB->Put(&f);
 	int retry_call = 0;
 	End_VFS(&retry_call);
 	if (!retry_call) break;
-    }
-
-    if (u.u_error == EINCONS) {
-	u.u_error = ENOENT;
-	k_Purge(&cp->c_fid, 1);
     }
 }
 

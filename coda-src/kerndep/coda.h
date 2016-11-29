@@ -334,11 +334,9 @@ struct coda_open_out {
 struct coda_read_write_in {
     struct coda_in_hdr ih;
     struct CodaFid	Fid;
-    loff_t read_offset;
+    loff_t offset;
 
-    // Query write_offset, length if is_write is set
     int is_write;
-    loff_t write_offset;
     long length;
 };
 
