@@ -58,6 +58,7 @@ extern int global_kernfd;
 /* interfaces */
 #include <user.h>
 #include <vice.h>
+#include <vector>
 
 /* from util */
 #include <bstree.h>
@@ -116,6 +117,11 @@ void FSODaemon(void); /* used to be member of class fsdb (Satya 3/31/95) */
 
 #define FILE_CONFLICT       1
 #define DIRECTORY_CONFLICT  2
+
+typedef struct modified_writes {
+    long offset;
+    unsigned long length;
+} range_t;
 
 /* The (cached) file-system database. */
 class fsdb {
@@ -470,6 +476,9 @@ class fsobj {
 
     // for asr invocation
     /*T*/long lastresolved;			// time when object was last resolved
+
+    /* NEW: To log writes */
+    /*T*/std::vector<range_t> writeLog;
 
     /* Constructors, destructors. */
     void *operator new(size_t, fso_alloc_t, int); /* for allocation from freelist */
