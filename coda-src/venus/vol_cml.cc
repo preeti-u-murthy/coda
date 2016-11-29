@@ -2742,7 +2742,7 @@ int cmlent::DoneSending()
     int done = 0;
 
     if (HaveReintegrationHandle() &&
-	(u.u_store.Offset == u.u_store.Length))
+       (u.u_store.Offset == u.u_store.Length))
 	done = 1;
     
     return(done);
@@ -2900,11 +2900,36 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 		  FID_(&f->fid));
 
 	/* Sanity checks. */
+    // TODO: We would not have the entire file. We must open the file in 
+    // either RDONLY/WRONLY
 	if (!f->IsFile() || !HAVEALLDATA(f)) {
 	    code = EINVAL;
 	    goto Exit;
 	}
 
+    long offset;
+    unsigned long _length;
+    // GetNextVector()/GetFirstVector(): assuming its coalesced
+    if (f->writeLog.size() > 0) {
+        offset = f->writeLog[0].offset;
+        _length = f->writeLog[0].length;
+
+        if (u.u_store.Offset > offset) { // Current vector is ongoing
+            // Write the remaining part of the vector
+            _length = _length - (u.u_store.Offset - offset);
+        }
+
+        if (u.u_store.Offset < offset) { // New vector, so update
+            u.u_store.Offset = offset;
+        }
+
+        if (_length < length) {
+            length = _length;
+        }
+    } else {
+        offset = -1;
+    }
+    
 	/* Set up the SE descriptor. */
 	SE_Descriptor sed;
         memset(&sed, 0, sizeof(SE_Descriptor));
@@ -2913,6 +2938,10 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 	    struct SFTP_Descriptor *sei = &sed.Value.SmartFTPD;
 	    sei->TransmissionDirection = CLIENTTOSERVER;
 	    sei->hashmark = 0;
+
+
+        // At this stage both the store offset and length should be 
+        // set correctly from the above logic
 	    sei->SeekOffset = u.u_store.Offset;
 	    sei->ByteQuota = length;
 
@@ -2947,6 +2976,17 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 	Recov_BeginTrans();
 	    RVMLIB_REC_OBJECT(u);
 	    u.u_store.Offset += length;
+        // We are done with this member
+        if (offset + _length <= u.u_store.Offset) {
+            f->writeLog.erase(f->writeLog.begin());
+            // In order to save the logic in DoneSending()
+            // For both with and without the new logic, DoneSending()
+            // falls in place
+            if (f->writeLog.size() == 0) {
+                u.u_store.Offset = u.u_store.Length;
+            }
+        }
+        // if vector->length: remove vector
 	Recov_EndTrans(MAXFP);
     }
 
