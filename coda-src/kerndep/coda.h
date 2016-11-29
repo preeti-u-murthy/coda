@@ -337,7 +337,7 @@ struct coda_read_write_in {
     loff_t offset;
 
     int is_write;
-    long length;
+    unsigned long length;
 };
 
 /* coda_store: */
