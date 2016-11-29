@@ -270,7 +270,7 @@ FreeLocks:
     }
 }
 
-void vproc::write(struct venus_cnode *cp, long offset, long length)
+void vproc::write(struct venus_cnode *cp, long offset, unsigned long length)
 {
     LOG(1, ("vproc::write: fid = %s , offset=%lld, length=%lld\n", 
 	    FID_(&cp->c_fid), offset, length));
@@ -293,12 +293,12 @@ void vproc::write(struct venus_cnode *cp, long offset, long length)
 	/* Do the operation. */
 	/*u.u_error = f->Read(cp, u.u_uid);
 	if (u.u_error) goto FreeLocks;*/
-    /*range_t newWrite;
+    range_t newWrite;
     newWrite.length = length;
     newWrite.offset = offset;
 
     // Sort the logs ?
-    f->writeLog.push_back(newWrite);*/
+    f->writeLog.push_back(newWrite);
 
 FreeLocks:
 	int retry_call = 0;
