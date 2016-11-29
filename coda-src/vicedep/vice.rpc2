@@ -434,4 +434,9 @@ ViceNewConnection (IN RPC2_Integer SideEffectType,
 		       IN ViceFidAndVV Piggies[], 
 		       IN OUT RPC2_BoundedBS VFlagBS,
 		       IN RPC2_CountedBS PiggyCOP2);
+65: ViceSendReintFragment2 (IN VolumeId Vid,
+			   IN ViceReintHandle RHandle,
+			   IN RPC2_Unsigned Length,
+			   IN RPC2_Integer Offset,
+			   IN OUT SE_Descriptor BD);
 

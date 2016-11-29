@@ -404,14 +404,19 @@ long FS_ViceQueryReintHandle(RPC2_Handle RPCid, VolumeId Vid,
     return(errorCode);
 }
 
+long FS_ViceSendReintFragment(RPC2_Handle RPCid, VolumeId Vid,
+			      ViceReintHandle *RHandle, RPC2_Unsigned Length,
+			      SE_Descriptor *BD) {
+    FS_ViceSendReintFragment2(RPCid, Vid, RHandle, Length, -1, BD);
+}
 
 /*
   ViceSendReintFragment:  append file data corresponding to the 
   handle for  an upcoming reintegration.
 */
-long FS_ViceSendReintFragment(RPC2_Handle RPCid, VolumeId Vid,
+long FS_ViceSendReintFragment2(RPC2_Handle RPCid, VolumeId Vid,
 			      ViceReintHandle *RHandle, RPC2_Unsigned Length,
-			      SE_Descriptor *BD)
+			      RPC2_Integer Offset, SE_Descriptor *BD)
 {
     int errorCode = 0;		/* return code for caller */
     ClientEntry *client = 0;	/* pointer to client structure */
@@ -455,7 +460,11 @@ long FS_ViceSendReintFragment(RPC2_Handle RPCid, VolumeId Vid,
     sid.Tag = client->SEType;
     sid.Value.SmartFTPD.TransmissionDirection = CLIENTTOSERVER;
     // Change this to set to the offset that is passed in as a parameter
+    if (Offset == -1) {
     sid.Value.SmartFTPD.SeekOffset = status.st_size;	
+    } else {
+    sid.Value.SmartFTPD.SeekOffset = Offset;	
+    }
     sid.Value.SmartFTPD.hashmark = (SrvDebugLevel > 2 ? '#' : '\0');
     sid.Value.SmartFTPD.Tag = FILEBYFD;
     sid.Value.SmartFTPD.ByteQuota = Length;
