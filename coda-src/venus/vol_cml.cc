@@ -2976,14 +2976,17 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 	Recov_BeginTrans();
 	    RVMLIB_REC_OBJECT(u);
 	    u.u_store.Offset += length;
-        // We are done with this member
-        if (offset + _length <= u.u_store.Offset) {
-            f->writeLog.erase(f->writeLog.begin());
-            // In order to save the logic in DoneSending()
-            // For both with and without the new logic, DoneSending()
-            // falls in place
-            if (f->writeLog.size() == 0) {
-                u.u_store.Offset = u.u_store.Length;
+        // Check if the writelog existed
+        if (offset != -1) {
+            // We are done with this member
+            if (offset + _length <= u.u_store.Offset) {
+                f->writeLog.erase(f->writeLog.begin());
+                // In order to save the logic in DoneSending()
+                // For both with and without the new logic, DoneSending()
+                // falls in place
+                if (f->writeLog.size() == 0) {
+                    u.u_store.Offset = u.u_store.Length;
+                }
             }
         }
         // if vector->length: remove vector
