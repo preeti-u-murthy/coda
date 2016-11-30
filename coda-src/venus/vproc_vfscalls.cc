@@ -86,7 +86,7 @@ extern "C" {
 /* Temporary!  Move to cnode.h. -JJK */
 #define	C_INCON	0x2
 
-
+#define MAX_WRITELOG_SIZE 100
 /* ***** VFS Operations  ***** */
 
 void vproc::root(struct venus_cnode *vpp) {
@@ -272,6 +272,11 @@ FreeLocks:
 
 void vproc::write(struct venus_cnode *cp, long offset, unsigned long length)
 {
+    // Data structures used for sorting the write logs
+    uint8_t currIdx, nextIdx;
+    long OF1, OF2;            // Offsets of two consequtive vector elements
+    unsigned long L1, L2;     // Lengths of modification of 2 consequitive vector elements
+
     LOG(1, ("vproc::write: fid = %s , offset=%lld, length=%lld\n", 
 	    FID_(&cp->c_fid), offset, length));
 
@@ -297,8 +302,71 @@ void vproc::write(struct venus_cnode *cp, long offset, unsigned long length)
     newWrite.length = length;
     newWrite.offset = offset;
 
-    // Sort the logs ?
-    f->writeLog.push_back(newWrite);
+    // Insert the new element at the beginning and sort
+    f->writeLog.insert(f->writeLog.begin(), newWrite);
+
+    // If the size exceeds; consider the entire file to be modified
+    // Empty the vector so that WriteReintegrationHandle() writes
+    // back the whole file
+    if (f->writeLog.size() > MAX_WRITELOG_SIZE) {
+        f->writeLog.clear();
+    }
+
+    /* NEW: Logic to sort the write logs
+     */
+    // First modified range
+    if (f->writeLog.size() == 1)
+        return;
+    // Indices of the elements of the vector
+    // Setup
+    currIdx = 0;
+    nextIdx = 1;
+
+    // Note that we are trying to insert currIdx in the right place
+    OF1 = f->writeLog[currIdx].offset;
+    OF2 = f->writeLog[nextIdx].offset;
+    L1 = f->writeLog[currIdx].length;
+    L2 = f->writeLog[nextIdx].length;
+
+    while (nextIdx < f->writeLog.size()) {
+        // Case1: Non intersecting vectors. currIdx is in the right place
+        if (OF1 < OF2 && (OF1+L1) <= OF2)
+            return;
+        // Case2: CurrIdx starts behind nextIdx
+        if (OF1 < OF2) {
+            // Case 2.1: CUrrIdx ends before nextIdx ends
+            if (OF1+L1 <= OF2+L2) {
+                // No more merges required
+                f->writeLog[nextIdx].offset = OF1;
+                f->writeLog[nextIdx].length = 
+                    (OF2-OF1) + L2;
+                f->writeLog.erase(f->writeLog.begin() + currIdx);
+                return;
+            } else {
+                // Case 2.2: currIdx ends after nextIdx ends
+                // The currIdx completely encompasses the nextIdx; merge and redo
+                f->writeLog[nextIdx].offset = OF1;
+                f->writeLog[nextIdx].length = L2;
+                f->writeLog.erase(f->writeLog.begin() + currIdx);
+            }
+        } else {    // Case 3: currIdx starts after nextIdx starts
+            // Case 3.1: currIdx falls completely within nextIdx; no changes required
+            if ((OF1+L1 <= OF2+L2))
+                return;
+            // Case 3.2: the currIdx is beyond the nextIdx; so swap the two values
+            if (OF2 + L2 <= OF1) {
+                iter_swap(f->writeLog.begin() + currIdx,
+                          f->writeLog.begin() + nextIdx);
+                currIdx = nextIdx;
+                nextIdx++;
+            } else {
+                // Case 3.3: currIdx ends beyond nextIdx; so merge and redo
+                f->writeLog[nextIdx].offset = OF2;
+                f->writeLog[nextIdx].length = (OF1 - OF2) + L1;
+                f->writeLog.erase(f->writeLog.begin() + currIdx);
+            }
+        }
+    }
 
 FreeLocks:
 	int retry_call = 0;
