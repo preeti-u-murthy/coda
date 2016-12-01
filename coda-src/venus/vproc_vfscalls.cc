@@ -271,7 +271,7 @@ FreeLocks:
 
 void vproc::write(struct venus_cnode *cp, long offset, unsigned long length)
 {
-    LOG(1, ("vproc::write: fid = %s , offset=%lld, length=%lld\n", 
+    LOG(0, ("vproc::write: fid = %s , offset=%lld, length=%lld\n", 
 	    FID_(&cp->c_fid), offset, length));
 
     fsobj *f = 0;
@@ -304,6 +304,7 @@ FreeLocks:
 	End_VFS(&retry_call);
 	if (!retry_call) break;
     }
+    LOG(0, ("vproc::write:done\n"));
 }
 
 void vproc::close(struct venus_cnode *cp, int flags) 

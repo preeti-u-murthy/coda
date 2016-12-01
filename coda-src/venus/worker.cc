@@ -1436,6 +1436,14 @@ void worker::main(void)
 		
 		MAKE_CNODE(vtarget, in->coda_open_by_path.Fid, 0);
 
+        LOG(0,("CODA_READ_WRITE\n"));
+        if (in->coda_read_write.is_write != 1) {
+            LOG(0, ("CODA_READ_WRITE: attempted to read at offset %lld\n",
+                        in->coda_read_write.offset));
+        } else {
+            LOG(0, ("CODA_READ_WRITE: attempted to write %lld bytes at offset %lld\n",
+                        in->coda_read_write.length, in->coda_read_write.offset));
+        }
         // Treat this as a boolean
         if (in->coda_read_write.is_write) {
             write(&vtarget, in->coda_read_write.offset, in->coda_read_write.length);
@@ -1452,10 +1460,10 @@ void worker::main(void)
 #ifdef __CYGWIN32__
 #endif
                     if (in->coda_read_write.is_write != 1) {
-                        LOG(100, ("CODA_READ_WRITE: attempted to read at offset %lld\n",
+                        LOG(0, ("CODA_READ_WRITE: attempted to read at offset %lld\n",
                                     in->coda_read_write.offset));
                     } else {
-                        LOG(100, ("CODA_READ_WRITE: attempted to write %lld bytes at offset %lld\n",
+                        LOG(0, ("CODA_READ_WRITE: attempted to write %lld bytes at offset %lld\n",
                                     in->coda_read_write.length, in->coda_read_write.offset));
                     }
 		} else {

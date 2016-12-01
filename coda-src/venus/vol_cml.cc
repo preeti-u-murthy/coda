@@ -2965,8 +2965,8 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 	}
 
 	/* Notify Codacon */
-	MarinerLog("store::SendReintFragment %s, %s [%d] (%d/%d)\n", 
-		   vol->name, f->GetComp(), NBLOCKS(length), 
+	MarinerLog("store::SendReintFragment %s, %s %d,[%d] (%d/%d)\n", 
+		   vol->name, f->GetComp(), length, NBLOCKS(length), 
 		   u.u_store.Offset, u.u_store.Length);
 
 	/* Make the RPC call. */
