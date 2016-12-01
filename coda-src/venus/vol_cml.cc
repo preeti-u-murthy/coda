@@ -2740,9 +2740,19 @@ void cmlent::ClearReintegrationHandle()
 int cmlent::DoneSending()
 { 
     int done = 0;
+    fsobj *f = NULL;
 
+	/* get the fso associated with this record */
+	binding *b = strbase(binding, fid_bindings->first(), binder_handle);
+	f = (fsobj *)b->bindee;
+    // For lack of a better way to handle this
+	CODA_ASSERT(f != 0);
+
+    // Either you have reached the end of file or there are no more
+    // log entries
     if (HaveReintegrationHandle() &&
-       (u.u_store.Offset == u.u_store.Length))
+       ((u.u_store.Offset == u.u_store.Length) ||
+        (f->writeLog.size() == 0)))
 	done = 1;
     
     return(done);
@@ -2910,24 +2920,20 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
     long offset;
     unsigned long _length;
     // GetNextVector()/GetFirstVector(): assuming its coalesced
-    if (f->writeLog.size() > 0) {
-        offset = f->writeLog[0].offset;
-        _length = f->writeLog[0].length;
+    offset = f->writeLog[0].offset;
+    _length = f->writeLog[0].length;
 
-        if (u.u_store.Offset > offset) { // Current vector is ongoing
-            // Write the remaining part of the vector
-            _length = _length - (u.u_store.Offset - offset);
-        }
+    if (u.u_store.Offset > offset) { // Current vector is ongoing
+        // Write the remaining part of the vector
+        _length = _length - (u.u_store.Offset - offset);
+    }
 
-        if (u.u_store.Offset < offset) { // New vector, so update
-            u.u_store.Offset = offset;
-        }
+    if (u.u_store.Offset < offset) { // New vector, so update
+        u.u_store.Offset = offset;
+    }
 
-        if (_length < length) {
-            length = _length;
-        }
-    } else {
-        offset = -1;
+    if (_length < length) {
+        length = _length;
     }
     
 	/* Set up the SE descriptor. */
@@ -2976,18 +2982,12 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 	Recov_BeginTrans();
 	    RVMLIB_REC_OBJECT(u);
 	    u.u_store.Offset += length;
-        // Check if the writelog existed
-        if (offset != -1) {
-            // We are done with this member
-            if (offset + _length <= u.u_store.Offset) {
-                f->writeLog.erase(f->writeLog.begin());
-                // In order to save the logic in DoneSending()
-                // For both with and without the new logic, DoneSending()
-                // falls in place
-                if (f->writeLog.size() == 0) {
-                    u.u_store.Offset = u.u_store.Length;
-                }
-            }
+        // We are done with this member
+        if (offset + _length <= u.u_store.Offset) {
+            // DoneSending() will ensure that 
+            // WriteReintegrationHandle() is not called
+            // when there are no write log entries
+            f->writeLog.erase(f->writeLog.begin());
         }
         // if vector->length: remove vector
 	Recov_EndTrans(MAXFP);
