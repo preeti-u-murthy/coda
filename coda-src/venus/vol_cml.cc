@@ -2909,10 +2909,13 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 	    CHOKE("cmlent::WriteReintegrationHandle: no shadow file! (%s)\n",
 		  FID_(&f->fid));
 
-	/* Sanity checks. */
-    // TODO: We would not have the entire file. We must open the file in 
-    // either RDONLY/WRONLY
-	if (!f->IsFile() || !HAVEALLDATA(f)) {
+	/* Sanity checks.
+     *
+     * However, we no longer need the !HAVEALLDATA check because we only
+     * read the data that is to be modified in the new implementation
+     * and we will not modify the data that has not been accessed before
+    */
+	if (!f->IsFile()) {
 	    code = EINVAL;
 	    goto Exit;
 	}
@@ -2920,7 +2923,8 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
     long offset;
     unsigned long _length;
     // GetNextVector()/GetFirstVector(): assume all vectors
-    // are unsorted, lets keep it simple
+    // are unsorted, lets keep it simple. The logic involves simply
+    // moving on from one vector to the next and writing the chunks back
     offset = f->writeLog[0].offset;
     _length = f->writeLog[0].length;
 
