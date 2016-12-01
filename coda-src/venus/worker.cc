@@ -1437,10 +1437,10 @@ void worker::main(void)
 		MAKE_CNODE(vtarget, in->coda_open_by_path.Fid, 0);
 
         // Treat this as a boolean
-        if (in->coda_read_write.is_write != 1) {
-		    read(&vtarget, in->coda_read_write.offset);
-        } else {
+        if (in->coda_read_write.is_write) {
             write(&vtarget, in->coda_read_write.offset, in->coda_read_write.length);
+        } else {
+		    read(&vtarget, in->coda_read_write.offset);
         }
 		
 		if (u.u_error == 0) {
