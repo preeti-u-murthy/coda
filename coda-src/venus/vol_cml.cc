@@ -2919,7 +2919,8 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 
     long offset;
     unsigned long _length;
-    // GetNextVector()/GetFirstVector(): assuming its coalesced
+    // GetNextVector()/GetFirstVector(): assume all vectors
+    // are unsorted, lets keep it simple
     offset = f->writeLog[0].offset;
     _length = f->writeLog[0].length;
 
@@ -2928,7 +2929,8 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
         _length = _length - (u.u_store.Offset - offset);
     }
 
-    if (u.u_store.Offset < offset) { // New vector, so update
+    // The previous vector was written and u.u_store.Offset is reset
+    if (u.u_store.Offset == 0) { // New vector, so update
         u.u_store.Offset = offset;
     }
 
@@ -2988,6 +2990,11 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
             // WriteReintegrationHandle() is not called
             // when there are no write log entries
             f->writeLog.erase(f->writeLog.begin());
+
+            // However, lets reset the store offset, so that
+            // we move on to the next vector in the subsequent
+            // call
+            u.u_store.Offset = 0;
         }
         // if vector->length: remove vector
 	Recov_EndTrans(MAXFP);
