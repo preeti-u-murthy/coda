@@ -2971,8 +2971,8 @@ int cmlent::WriteReintegrationHandle(unsigned long *reint_time)
 
 	/* Make the RPC call. */
 	UNI_START_MESSAGE(ViceSendReintFragment_OP);
-	code = (int) ViceSendReintFragment(c->connid, vol->vid,
-					   &u.u_store.RHandle, length, &sed);
+	code = (int) ViceSendReintFragment2(c->connid, vol->vid,
+					   &u.u_store.RHandle, length, u.u_store.Offset, &sed);
 	UNI_END_MESSAGE(ViceSendReintFragment_OP);
 	MarinerLog("store::sendreintfragment done\n");
 
