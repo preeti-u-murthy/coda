@@ -2801,7 +2801,7 @@ int cmlent::GetReintegrationHandle()
 	/* Make the RPC call. */
 	MarinerLog("store::OpenReintHandle %s\n", vol->name);
 	UNI_START_MESSAGE(ViceOpenReintHandle_OP);
-	code = (int) ViceOpenReintHandle(c->connid, MakeViceFid(&u.u_store.Fid), &VR);
+	code = (int) ViceOpenReintHandle2(c->connid, MakeViceFid(&u.u_store.Fid), &VR, 1);
 	UNI_END_MESSAGE(ViceOpenReintHandle_OP);
 	MarinerLog("store::openreinthandle done\n");
 
