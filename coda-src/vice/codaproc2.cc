@@ -322,15 +322,16 @@ long FS_ViceOpenReintHandle(RPC2_Handle RPCid, ViceFid *Fid,
     infd = iopen(V_device(volptr), v->vptr->disk.node.inodeNumber, O_RDONLY);
     outfd = iopen(V_device(volptr), RHandle->Inode, O_WRONLY);
 
-    CODA_ASSERT(infd && outfd);
-    
-    START_TIMING(CopyOnWrite_iwrite);
-    rc = copyfile(infd, outfd);
-    END_TIMING(CopyOnWrite_iwrite);
+    // If an old file is opened
+    if (infd >= 0) {
+        START_TIMING(CopyOnWrite_iwrite);
+        rc = copyfile(infd, outfd);
+        END_TIMING(CopyOnWrite_iwrite);
 
-    CODA_ASSERT(rc != -1);
+        CODA_ASSERT(rc != -1);
+        close(infd);
+    }
 
-    close(infd);
     close(outfd);
 
     // At this point the temporary file has the old content(preseeded)
