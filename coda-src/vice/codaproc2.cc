@@ -289,6 +289,15 @@ long FS_ViceReintegrate(RPC2_Handle RPCid, VolumeId Vid, RPC2_Integer LogSize,
 long FS_ViceOpenReintHandle(RPC2_Handle RPCid, ViceFid *Fid, 
 			 ViceReintHandle *RHandle)
 {
+    return FS_ViceOpenReintHandle2(RPCid, Fid, RHandle, 0);
+}
+
+/*
+ * ViceOpenReintHandle2: New: To optimize the writes
+ */
+long FS_ViceOpenReintHandle2(RPC2_Handle RPCid, ViceFid *Fid, 
+			 ViceReintHandle *RHandle, RPC2_Integer writeOptimize)
+{
     int errorCode = 0;		/* return code for caller */
     Volume *volptr = 0;		/* pointer to the volume header */
     ClientEntry *client = 0;	/* pointer to client structure */
@@ -316,23 +325,25 @@ long FS_ViceOpenReintHandle(RPC2_Handle RPCid, ViceFid *Fid,
     CODA_ASSERT(RHandle->Inode > 0);
 
     // NEW: Optimize writes by reading only modified ranges sent from venus
-    int infd, outfd, rc;
-
-    // Open the file and copy its contents into the temporary file
-    infd = iopen(V_device(volptr), v->vptr->disk.node.inodeNumber, O_RDONLY);
-    outfd = iopen(V_device(volptr), RHandle->Inode, O_WRONLY);
-
-    // If an old file is opened
-    if (infd >= 0) {
-        START_TIMING(CopyOnWrite_iwrite);
-        rc = copyfile(infd, outfd);
-        END_TIMING(CopyOnWrite_iwrite);
-
-        CODA_ASSERT(rc != -1);
-        close(infd);
+    if (writeOptimize) {
+        int infd, outfd, rc;
+    
+        // Open the file and copy its contents into the temporary file
+        infd = iopen(V_device(volptr), v->vptr->disk.node.inodeNumber, O_RDONLY);
+        outfd = iopen(V_device(volptr), RHandle->Inode, O_WRONLY);
+    
+        // If an old file is opened, only then attempt copying
+        if (infd >= 0) {
+            START_TIMING(CopyOnWrite_iwrite);
+            rc = copyfile(infd, outfd);
+            END_TIMING(CopyOnWrite_iwrite);
+    
+            CODA_ASSERT(rc != -1);
+            close(infd);
+        }
+    
+        close(outfd);
     }
-
-    close(outfd);
 
     // At this point the temporary file has the old content(preseeded)
 FreeLocks:
@@ -408,7 +419,7 @@ long FS_ViceQueryReintHandle(RPC2_Handle RPCid, VolumeId Vid,
 long FS_ViceSendReintFragment(RPC2_Handle RPCid, VolumeId Vid,
 			      ViceReintHandle *RHandle, RPC2_Unsigned Length,
 			      SE_Descriptor *BD) {
-    FS_ViceSendReintFragment2(RPCid, Vid, RHandle, Length, -1, BD);
+    return FS_ViceSendReintFragment2(RPCid, Vid, RHandle, Length, -1, BD);
 }
 
 /*

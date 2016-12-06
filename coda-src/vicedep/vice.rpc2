@@ -439,4 +439,7 @@ ViceNewConnection (IN RPC2_Integer SideEffectType,
 			   IN RPC2_Unsigned Length,
 			   IN RPC2_Integer Offset,
 			   IN OUT SE_Descriptor BD);
+66: ViceOpenReintHandle2 (IN ViceFid Fid,
+			 OUT ViceReintHandle RHandle,
+             IN RPC2_Integer writeOptimize);
 
