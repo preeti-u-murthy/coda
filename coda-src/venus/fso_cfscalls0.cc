@@ -226,6 +226,7 @@ int fsobj::Fetch(uid_t uid, int want)
     GotThisData = 0;
     long cbtemp = cbbreaks;
 
+	struct SFTP_Descriptor *sei;
     /* C++ 3.0 whines if the following decls moved closer to use  -- Satya */
     {
 	    Recov_BeginTrans();
@@ -237,7 +238,7 @@ int fsobj::Fetch(uid_t uid, int want)
 	    sed->XferCB = FetchProgressIndicator_stub;
 	    sed->userp = this;
 
-	    struct SFTP_Descriptor *sei = &sed->Value.SmartFTPD;
+	    sei = &sed->Value.SmartFTPD;
 	    sei->TransmissionDirection = SERVERTOCLIENT;
 	    sei->hashmark = 0;
 	    sei->SeekOffset = offset;
@@ -334,11 +335,11 @@ int fsobj::Fetch(uid_t uid, int want)
 	    /* Make the RPC call. */
 	    CFSOP_PRELUDE(prel_str, comp, fid);
 	    MULTI_START_MESSAGE(ViceFetch_OP);
-	    code = (int) MRPC_MakeMulti(ViceFetch_OP, ViceFetch_PTR,
+	    code = (int) MRPC_MakeMulti(ViceFetch2_OP, ViceFetch2_PTR,
 				  VSG_MEMBERS, m->rocc.handles,
 				  m->rocc.retcodes, m->rocc.MIp, 0, 0,
 				  MakeViceFid(&fid), &stat.VV, inconok,
-				  statusvar_ptrs, ph, offset, &PiggyBS,
+				  statusvar_ptrs, ph, offset, sei->ByteQuota, &PiggyBS,
 				  sedvar_bufs);
 	    MULTI_END_MESSAGE(ViceFetch_OP);
 
@@ -449,10 +450,11 @@ RepExit:
 	/* Make the RPC call. */
 	CFSOP_PRELUDE(prel_str, comp, fid);
 	UNI_START_MESSAGE(ViceFetch_OP);
-	code = (int) ViceFetch(c->connid, MakeViceFid(&fid), &stat.VV, inconok,
-				  &status, 0, offset, &PiggyBS, sed);
+	code = (int) ViceFetch2(c->connid, MakeViceFid(&fid), &stat.VV, inconok,
+				  &status, 0, offset, sei->ByteQuota, &PiggyBS, sed);
 	UNI_END_MESSAGE(ViceFetch_OP);
 	CFSOP_POSTLUDE("fetch::fetch done\n");
+    eprint("ViceFetch2 %ld bytes from offset %ld\n", sei->ByteQuota, offset);
 
 	/* Examine the return code to decide what to do next. */
 	code = vp->Collate(c, code);

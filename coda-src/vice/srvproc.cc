@@ -176,13 +176,20 @@ extern void PollAndYield();
  ***************************************************
  */
 
+long FS_ViceFetch(RPC2_Handle RPCid, ViceFid *Fid, ViceVersionVector *VV,
+		  RPC2_Unsigned InconOK, ViceStatus *Status,
+		  RPC2_Unsigned PrimaryHost, RPC2_Unsigned Offset,
+		  RPC2_CountedBS *PiggyBS, SE_Descriptor *BD)
+{
+    FS_ViceFetch2(RPCid, Fid, VV, InconOK, Status, PrimaryHost, Offset, -1, PiggyBS, BD);
+}
 
 /*
   ViceFetch: Fetch a file or directory
 */
-long FS_ViceFetch(RPC2_Handle RPCid, ViceFid *Fid, ViceVersionVector *VV,
+long FS_ViceFetch2(RPC2_Handle RPCid, ViceFid *Fid, ViceVersionVector *VV,
 		  RPC2_Unsigned InconOK, ViceStatus *Status,
-		  RPC2_Unsigned PrimaryHost, RPC2_Unsigned Offset,
+		  RPC2_Unsigned PrimaryHost, RPC2_Unsigned Offset, RPC2_Integer BytesRequired,
 		  RPC2_CountedBS *PiggyBS, SE_Descriptor *BD)
 {
     int errorCode = 0;		/* return code to caller */
@@ -224,7 +231,7 @@ START_TIMING(Fetch_Total);
     {
 	if (!ReplicatedOp || PrimaryHost == ThisHostAddr)
 	    if ((errorCode = FetchBulkTransfer(RPCid, client, volptr, v->vptr,
-					      Offset, VV)))
+					      Offset, BytesRequired, VV)))
 		goto FreeLocks;
 	PerformFetch(client, volptr, v->vptr);
 
@@ -2120,7 +2127,7 @@ void PerformFetch(ClientEntry *client, Volume *volptr, Vnode *vptr) {
 
 
 int FetchBulkTransfer(RPC2_Handle RPCid, ClientEntry *client, 
-		      Volume *volptr, Vnode *vptr, RPC2_Unsigned Offset,
+		      Volume *volptr, Vnode *vptr, RPC2_Unsigned Offset, RPC2_Integer BytesRequired,
 		      ViceVersionVector *VV)
 {
     int errorCode = 0;
@@ -2168,7 +2175,7 @@ int FetchBulkTransfer(RPC2_Handle RPCid, ClientEntry *client,
 	sid.Value.SmartFTPD.TransmissionDirection = SERVERTOCLIENT;
 	sid.Value.SmartFTPD.SeekOffset = Offset;
 	sid.Value.SmartFTPD.hashmark = (SrvDebugLevel > 2 ? '#' : '\0');
-	sid.Value.SmartFTPD.ByteQuota = -1;
+	sid.Value.SmartFTPD.ByteQuota = BytesRequired;
 	if (vptr->disk.type != vDirectory) {
 	    if (vptr->disk.node.inodeNumber) {
 		fd = iopen(V_device(volptr), vptr->disk.node.inodeNumber, O_RDONLY);
@@ -2259,7 +2266,7 @@ int FetchBulkTransfer(RPC2_Handle RPCid, ClientEntry *client,
 	    Counters[FETCHD5]++;
 
 	SLog(2, "FetchBulkTransfer: transferred %d bytes %s",
-	     Length, FID_(&Fid));
+	     BytesRequired, FID_(&Fid));
     }
 
 Exit:
